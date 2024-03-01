@@ -1,9 +1,11 @@
 import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
+from src.data.dataset import SignalDataset
 model_name = 'VMware/open-llama-7B-open-instruct'
+SIGNAL_DIR = "Signal_1M"
 
+ds = SignalDataset(SIGNAL_DIR)
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
 
@@ -31,14 +33,14 @@ GUIDELINES_PROMPT = (
     "Output: "
 )
 
-my_sentence = "Hanyu Pinyin worked under Christopher in the same project in Google for 2 years and the project started on 24-06-2018."
+my_sentence = ds[0]['content']
 
 inputt = GUIDELINES_PROMPT.format(my_sentence)
 
 
 input_ids = tokenizer(inputt, return_tensors="pt").input_ids.to("cuda")
 
-output1 = model.generate(input_ids, max_length=512)
+output1 = model.generate(input_ids, max_length=2048)
 input_length = input_ids.shape[1]
 output1 = output1[:, input_length:]
 output= tokenizer.decode(output1[0])
