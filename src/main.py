@@ -1,7 +1,7 @@
 import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from src.data.dataset import SignalDataset
+from src.data.signal_dataset import SignalDataset
 import nltk
 import re
 
