@@ -62,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument("--signal_dir", help="Directory of Signal 1M Dataset", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--topk", default=50, help="Top K similar sentences in ConLL2003", type=int)
-    parser.add_argument("--model", default="all-mpnet-base-v2", help="Sentence transformer used for semantic search", type=int)
+    parser.add_argument("--model", default="all-mpnet-base-v2", help="Sentence transformer used for semantic search")
 
     args = parser.parse_args()
 
