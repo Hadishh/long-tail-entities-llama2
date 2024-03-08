@@ -52,7 +52,7 @@ def main(args):
             
             json_data[ner_type] = conll_ids
         
-        out_path = os.join(args.output_dir, id)
+        out_path = os.path.join(args.output_dir, id)
         with open(out_path, "w") as f:
             json.dump(json_data, f)
         
