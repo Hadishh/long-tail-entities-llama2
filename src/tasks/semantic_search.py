@@ -1,23 +1,21 @@
 import argparse
 from tqdm import tqdm
-import nltk
 import os
 import json
 
 import sentence_transformers
 from sentence_transformers import util
-from src.data.conll import ConLL2003
 from src.data.signal_dataset import SignalDataset
+from src.utils import NER_TYPES, sentence_tokenize, load_conll_corpuses
 
 
 def main(args):
     device = "cuda:0"
-    NER_TYPES = ["PER", "ORG", "LOC", "MISC"]
     os.makedirs(args.output_dir, exist_ok=True)
     embedder = sentence_transformers.SentenceTransformer(args.model)
 
     print("Loading ConLL 2003 dataset")
-    corpuses = { t: ConLL2003(t) for t in NER_TYPES}
+    corpuses = load_conll_corpuses()
     corpus_embeddings = dict()
 
     for ner_type in NER_TYPES:
@@ -33,7 +31,7 @@ def main(args):
     for i in tqdm(range(len(signal_ds))):
         signal_d = signal_ds[i]
 
-        sentences = nltk.sent_tokenize(signal_d["content"])
+        sentences = sentence_tokenize(signal_d["content"])
         id = signal_d["id"]
 
         json_data = {"id": id}

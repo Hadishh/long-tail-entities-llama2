@@ -73,4 +73,7 @@ class ConLL2003():
         return len(self.data)
 
     def get_by_id(self, id):
+        if id is not self.id2idx:
+            return 404
+        
         return self.data[self.id2idx[id]]
