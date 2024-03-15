@@ -57,14 +57,26 @@ class LM:
 
         #relevant_examples
         for example in pos_examples:
-            pass
+            input_sent = example["sentence"]
+            output_sent = example["tagged"]
+            example = utils.NER_EXAMPLE_TEMPLATE.format(input_sent, output_sent)
+            examples.append(example)
 
         #negative_examples
         for example in neg_examples:
-            pass
+            input_sent = example["sentence"]
+            output_sent = example["sentence"]
+            example = utils.NER_EXAMPLE_TEMPLATE.format(input_sent, output_sent)
+            examples.append(example)
 
-        example = "".join(examples)
+        random.shuffle(examples)
 
+        # add the input sentence as final input
+        examples.append(utils.NER_EXAMPLE_TEMPLATE.format(sentence, ""))
+
+        examples = "".join(examples)
+
+        prompt = prompt + examples
 
         output = self.__inference(prompt)
 

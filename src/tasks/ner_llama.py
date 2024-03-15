@@ -8,6 +8,8 @@ from src.language_model import LM
 def unify_ner_examples(args, working_entity_type, sentence_idx, semantic_relations, corpuses):
     pos_examples = semantic_relations[working_entity_type][sentence_idx]
     pos_examples = random.choices(pos_examples, k=args.pos_examples_count)
+    pos_examples = [corpuses[working_entity_type].get_by_id(id) for id in pos_examples]
+
     neg_examples = []
     examples_per_type_count = args.neg_examples_count // (len(NER_TYPES) - 1)
     for type_ in NER_TYPES:
@@ -20,7 +22,7 @@ def unify_ner_examples(args, working_entity_type, sentence_idx, semantic_relatio
                 approved_neg_examples.append(example_id)
         
         approved_neg_examples = random.choices(approved_neg_examples, k = examples_per_type_count)
-
+        approved_neg_examples = [corpuses[type_].get_by_id(id) for id in approved_neg_examples]
         neg_examples.extend(approved_neg_examples)
     
     return pos_examples, neg_examples
