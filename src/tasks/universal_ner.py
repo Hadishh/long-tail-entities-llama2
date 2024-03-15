@@ -24,11 +24,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--signal_dir", help="Directory of Signal 1M Dataset", required=True)
-    parser.add_argument("--semantic_dir", help="Directory of Signal 1M Dataset Semantic related intstances, gathered from semantic search.", required=True)
     parser.add_argument("--entity_type", choices=["per", "org", "loc", "misc"], required=True)
-    parser.add_argument("--self_verify", type=bool, default=True)
-    parser.add_argument("--pos_examples_count", default=24)
-    parser.add_argument("--neg_examples_count", default=24)
     parser.add_argument("--seed", default=6556)
     parser.add_argument("--output_dir", required=True)
 

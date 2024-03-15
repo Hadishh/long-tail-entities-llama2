@@ -1,0 +1,4 @@
+vllm
+transformers>=4.30.1
+fire
+tokenizers>=0.13.1
