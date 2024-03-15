@@ -18,7 +18,7 @@ def unify_ner_examples(args, working_entity_type, sentence_idx, semantic_relatio
         potential_neg_examples = semantic_relations[type_][sentence_idx]
         approved_neg_examples = []
         for example_id in potential_neg_examples:
-            if type(corpuses[working_entity_type].get_by_id(example_id)) == type(str()):
+            if type(corpuses[working_entity_type].get_by_id(example_id)) == type(int()):
                 approved_neg_examples.append(example_id)
         
         approved_neg_examples = random.choices(approved_neg_examples, k = examples_per_type_count)
