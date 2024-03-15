@@ -14,9 +14,11 @@ def main(args):
     language_model = NERModel(WORKING_ENTITY)
     
 
-    for signal_idx in range(len(signal_ds)):
-        instance = signal_ds[signal_idx]
-        sentences = sentence_tokenize(instance["content"])
+    for signal_idx in range(0, len(signal_ds), 1000):
+        sentences = []
+        for i in range(1000):
+            instance = signal_ds[signal_idx + i]
+            sentences.extend(sentence_tokenize(instance["content"]))
         ners = language_model.do_ner(sentences)
             
 
