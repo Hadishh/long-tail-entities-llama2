@@ -1,86 +1,68 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import fire
+from vllm import LLM, SamplingParams
+
+from transformers import LlamaTokenizer
 import re
 import random
 import torch
 
-import src.utils as utils
+from src.utils import preprocess_instance, get_response
 
-class LM:
-    def __init__(self, entity_type, model_name = 'meta-llama/Llama-2-7b-hf', device="cuda:0") -> None:
+class NERModel:
+    def __init__(self, entity_type, model_path = 'Universal-NER/UniNER-7B-type', device="cuda:0") -> None:
         self.entity_names = {"LOC": "Location", 
                              "ORG": "Organization",
                              "MISC": "Miscellaneous",
                              "PER": "Person"}
         
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype= torch.float16).to(device)
-        self.max_length = 4096
+        self.tokenizer = LlamaTokenizer.from_pretrained(model_path)
+        self.model = LLM(model=model_path, tensor_parallel_size=1)
+        self.max_input_length = 512
+        self.max_new_tokens = 256
         self.device = device
         self.entity_type = entity_type.upper()
 
         
         
-    def __inference(self, prompt):
-        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.device)
-        output = self.model.generate(input_ids, max_length=self.max_length)
-        input_length = input_ids.shape[1]
-        output = output[:, input_length:]
+    def __inference(self, examples):
+        prompts = [preprocess_instance(example['conversations']) for example in examples]
+        sampling_params = SamplingParams(temperature=0, max_tokens=self.max_new_tokens, stop=['</s>'])
+        responses = self.model.generate(prompts, sampling_params)
+        responses_corret_order = []
+        response_set = {response.prompt: response for response in responses}
+        for prompt in prompts:
+            assert prompt in response_set
+            responses_corret_order.append(response_set[prompt])
+        responses = responses_corret_order
+        outputs = get_response([output.outputs[0].text for output in responses])
+        return outputs
 
-        output = self.tokenizer.decode(output[0])
-
-        return output
-
-
-    def self_verify(self, original_sentence, 
-                    model_pred_sent, 
-                    yes_examples, 
-                    no_examples
-                ):
-        
-        prompt = utils.SELF_VERIFICATION_INITIAL_TEMPLATE.format(self.entity_names[self.entity_type])
-        examples = [(i, "Yes") for i in yes_examples] + \
-                   [(i, "No") for i in no_examples]
-        
-        random.shuffle(examples)
-        for example, response in examples:
-            # prompt += utils.SELF_VERIFICATION_EXAMPLE_TEMPLATE\
-            #             .format(example, )
-            pass
     
-    def do_ner(self, 
-               sentence, 
-               pos_examples, 
-               neg_examples
+    def do_ner(self, sentences
                ):
-        prompt = utils.NER_INITIAL_TEMPLATE.format(self.entity_names[self.entity_type])
-        examples = []
+        examples = list()
+        for sentence in sentences:
+            examples.append([{"conversations": 
+                        [
+                            {"from": "human", 
+                            "value": f"Text: {sentence}"
+                            }, 
 
-        #relevant_examples
-        for example in pos_examples:
-            input_sent = example["sentence"]
-            output_sent = example["tagged"]
-            example = utils.NER_EXAMPLE_TEMPLATE.format(input_sent, output_sent)
-            examples.append(example)
-
-        #negative_examples
-        for example in neg_examples:
-            input_sent = example["sentence"]
-            output_sent = example["sentence"]
-            example = utils.NER_EXAMPLE_TEMPLATE.format(input_sent, output_sent)
-            examples.append(example)
-
-        random.shuffle(examples)
-
-        # add the input sentence as final input
-        examples.append(utils.NER_EXAMPLE_TEMPLATE.format(sentence, ""))
-
-        examples = "".join(examples)
-
-        prompt = prompt + examples
-
-        output = self.__inference(prompt)
-
-        return output
+                            {"from": "gpt", 
+                            "value": "I've read this text."
+                            }, 
+                            
+                            {"from": "human", 
+                            "value": f"What describes {self.entity_names[self.entity_type]} in the text?"
+                            }, 
+                            
+                            {"from": "gpt", 
+                            "value": "[]"
+                            }
+                        ]
+                        }])
+        output = self.__inference(examples=examples)
+        return 
         
 
 

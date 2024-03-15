@@ -1,5 +1,7 @@
 import nltk
 from src.data.conll import ConLL2003
+from src.conversation import get_conv_template
+
 
 SELF_VERIFICATION_INITIAL_TEMPLATE = \
 (
@@ -36,3 +38,20 @@ def sentence_tokenize(article):
 def load_conll_corpuses():
     corpuses = { t: ConLL2003(t) for t in NER_TYPES}
     return corpuses
+
+
+def preprocess_instance(source):
+    """Obtained from https://github.com/universal-ner/universal-ner/blob/main/src/utils.py"""
+    conv = get_conv_template("ie_as_qa")
+    for j, sentence in enumerate(source):
+        value = sentence['value']
+        if j == len(source) - 1:
+            value = None
+        conv.append_message(conv.roles[j % 2], value)
+    prompt = conv.get_prompt()
+    return prompt
+
+def get_response(responses):
+    """Obtained from https://github.com/universal-ner/universal-ner/blob/main/src/utils.py"""
+    responses = [r.split('ASSISTANT:')[-1].strip() for r in responses]
+    return responses
