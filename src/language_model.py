@@ -14,7 +14,7 @@ class LM:
         
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype= torch.float16).to(device)
-        self.max_length = 1024
+        self.max_length = 4096
         self.device = device
         self.entity_type = entity_type.upper()
 
