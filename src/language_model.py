@@ -27,7 +27,7 @@ class NERModel:
     def __inference(self, examples):
         prompts = [preprocess_instance(example['conversations']) for example in examples]
         sampling_params = SamplingParams(temperature=0, max_tokens=self.max_new_tokens, stop=['</s>'])
-        responses = self.model.generate(prompts, sampling_params)
+        responses = self.model.generate(prompts, sampling_params, use_tqdm=False)
         responses_corret_order = []
         response_set = {response.prompt: response for response in responses}
         for prompt in prompts:
