@@ -17,7 +17,7 @@ class NERModel:
         
         self.tokenizer = LlamaTokenizer.from_pretrained(model_path)
         self.model = LLM(model=model_path, tensor_parallel_size=1)
-        self.max_input_length = 512
+        self.max_input_length = 1024
         self.max_new_tokens = 256
         self.device = device
         self.entity_type = entity_type.upper()
