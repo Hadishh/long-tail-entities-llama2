@@ -34,7 +34,7 @@ def main(args):
             result = [] 
             start, end = value
             for i in range(start, end):
-                result.append(ners[i])
+                result.append(json.loads(ners[i]))
             
             with open(file_path, "w") as f:
                 json.dump(result, f)
