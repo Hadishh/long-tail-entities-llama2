@@ -8,23 +8,35 @@ from src.utils import NER_TYPES, sentence_tokenize, load_conll_corpuses
 from src.data.signal_dataset import SignalDataset
 from src.language_model import NERModel
 
-
 def main(args):
     random.seed(args.seed)
     WORKING_ENTITY = args.entity_type.upper()
-    os.makedirs(os.path.join(args.output_dir, WORKING_ENTITY), exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, WORKING_ENTITY, "ERRORS"), exist_ok=True)
     signal_ds = SignalDataset(args.signal_dir)
     language_model = NERModel(WORKING_ENTITY)
     
-
-    for signal_idx in tqdm(range(0, len(signal_ds), args.batch_size)):
+    failures = 0
+    for signal_idx in (pbar := tqdm(range(0, len(signal_ds), args.batch_size))):
         sentences = []
         indices = {}
         for i in range(args.batch_size):
+            pbar.set_description(f"Failures: {failures}")
             if i + signal_idx >= len(signal_ds):
                 break
             instance = signal_ds[signal_idx + i]
             sent_tokenized = sentence_tokenize(instance["content"])
+           
+            able_to_tokenize = True
+            for sent in sent_tokenized:
+                if (len(language_model.tokenizer(sent + WORKING_ENTITY)['input_ids']) > language_model.max_input_length):
+                    able_to_tokenize = False
+                    break
+            # in case of bad sentence tokenization and token overflow. 
+            if not able_to_tokenize:
+                with open(os.path.join(args.output_dir, WORKING_ENTITY, "ERRORS", instance["id"]), "w", encoding="utf-8") as f:
+                    json.dump(instance, f)
+                failures += 1
+                continue
             indices[instance["id"]] = (len(sentences), len(sentences) + len(sent_tokenized))
             sentences.extend(sent_tokenized)
         ners = language_model.do_ner(sentences)
@@ -34,9 +46,13 @@ def main(args):
             result = [] 
             start, end = value
             for i in range(start, end):
-                result.append(json.loads(ners[i]))
+                try:
+                    result.append(json.loads(ners[i]))
+                except:
+                    splitted_text = ners[i][2:].split("\", \"")
+                    result.append(splitted_text)
             
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(result, f)
             
 

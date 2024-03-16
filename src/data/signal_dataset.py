@@ -16,7 +16,7 @@ class SignalDataset(Dataset):
                     self.semantic_files.append(os.path.join(semantics_dir, file))
         
     def __getitem__(self, index):
-        with open(self.data_files[index], "r") as f:
+        with open(self.data_files[index], "r", encoding="utf-8") as f:
             instance = json.load(f)
         
         if self.semantic_files:
