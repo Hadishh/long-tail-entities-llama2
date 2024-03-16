@@ -1,6 +1,8 @@
 import argparse
 import os
 import random
+import json
+
 from src.utils import NER_TYPES, sentence_tokenize, load_conll_corpuses
 from src.data.signal_dataset import SignalDataset
 from src.language_model import NERModel
@@ -14,12 +16,19 @@ def main(args):
     language_model = NERModel(WORKING_ENTITY)
     
 
-    for signal_idx in range(0, len(signal_ds), 1000):
+    for signal_idx in range(0, len(signal_ds), 100):
         sentences = []
-        for i in range(1000):
+        indices = {}
+        for i in range(100):
             instance = signal_ds[signal_idx + i]
-            sentences.extend(sentence_tokenize(instance["content"]))
+            sent_tokenized = sentence_tokenize(instance["content"])
+            indices[instance["id"]] = (len(sentences), len(sentences) + len(sent_tokenized))
+            sentences.extend(sent_tokenized)
         ners = language_model.do_ner(sentences)
+
+        for key, value in indices.items():
+            file_path = os.path.join(args.output_dir, key) 
+            with open()
             
 
 if __name__ == "__main__":
@@ -28,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument("--signal_dir", help="Directory of Signal 1M Dataset", required=True)
     parser.add_argument("--entity_type", choices=["per", "org", "loc", "misc"], required=True)
     parser.add_argument("--seed", default=6556)
+    parser.add_argument("--batch_size", default=128)
     parser.add_argument("--output_dir", required=True)
 
     args = parser.parse_args()
