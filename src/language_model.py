@@ -10,10 +10,10 @@ from src.utils import preprocess_instance, get_response
 
 class NERModel:
     def __init__(self, entity_type, model_path = 'Universal-NER/UniNER-7B-type', device="cuda:0") -> None:
-        self.entity_names = {"LOC": "Location Names", 
-                             "ORG": "Organization Names",
+        self.entity_names = {"LOC": "Location Name Entities", 
+                             "ORG": "Organization Name Entities",
                              "MISC": "Miscellaneous",
-                             "PER": "Person Names"}
+                             "PER": "Person Name Entities"}
         
         self.tokenizer = LlamaTokenizer.from_pretrained(model_path)
         self.model = LLM(model=model_path, tensor_parallel_size=1)
@@ -63,7 +63,3 @@ class NERModel:
                         })
         output = self.__inference(examples=examples)
         return output
-        
-
-
-

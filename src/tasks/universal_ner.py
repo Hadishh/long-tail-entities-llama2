@@ -8,6 +8,7 @@ from src.utils import NER_TYPES, sentence_tokenize, load_conll_corpuses
 from src.data.signal_dataset import SignalDataset
 from src.language_model import NERModel
 
+
 def main(args):
     random.seed(args.seed)
     WORKING_ENTITY = args.entity_type.upper()
@@ -16,14 +17,16 @@ def main(args):
     language_model = NERModel(WORKING_ENTITY)
     
     failures = 0
-    for signal_idx in (pbar := tqdm(range(0, len(signal_ds), args.batch_size))):
+    signal_chosen = random.sample(range(len(signal_ds)), k=256000)
+    for batch_idx in (pbar := tqdm(range(0, len(signal_chosen), args.batch_size))):
         sentences = []
         indices = {}
         for i in range(args.batch_size):
             pbar.set_description(f"Failures: {failures}")
-            if i + signal_idx >= len(signal_ds):
+            if i + batch_idx >= len(signal_chosen):
                 break
-            instance = signal_ds[signal_idx + i]
+            signal_idx = signal_chosen[batch_idx + i]
+            instance = signal_ds[signal_idx]
             sent_tokenized = sentence_tokenize(instance["content"])
            
             able_to_tokenize = True
