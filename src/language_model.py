@@ -12,7 +12,7 @@ class NERModel:
     def __init__(self, entity_type, model_path = 'Universal-NER/UniNER-7B-type', device="cuda:0") -> None:
         self.entity_names = {"LOC": "Location Name Entities", 
                              "ORG": "Organization Name Entities",
-                             "MISC": "Miscellaneous",
+                             "MISC": "Miscellaneous Name Entities",
                              "PER": "Person Name Entities"}
         
         self.tokenizer = LlamaTokenizer.from_pretrained(model_path)
