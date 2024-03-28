@@ -1,10 +1,6 @@
-import fire
 from vllm import LLM, SamplingParams
 
 from transformers import LlamaTokenizer
-import re
-import random
-import torch
 
 from src.utils import preprocess_instance, get_response
 
