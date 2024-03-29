@@ -14,7 +14,7 @@
 *.tax2010
 *.vcf
 *.xml
-
+.checkpoints/*
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
