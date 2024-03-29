@@ -32,9 +32,9 @@ def get_checkpoints_dir():
 def get_local_model_path():
     model_name = get_base_model_name()
     if model_name == "roberta-base":
-        return get_checkpoints_dir / "SpEL-base-step3-500K.pt"
+        return get_checkpoints_dir() / "SpEL-base-step3-500K.pt"
     elif model_name == "roberta-large":
-        return get_checkpoints_dir / "SpEL-large-step3-500K.pt"
+        return get_checkpoints_dir() / "SpEL-large-step3-500K.pt"
     else:
         raise Exception("Wrong base model name!!")
 
