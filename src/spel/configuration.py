@@ -11,7 +11,8 @@ OOD_CANONICAL_REDIRECTS = None
 
 
 def get_base_model_name():
-    return open(r"src\spel\base_model.cfg", "r").read().strip()
+    base_conf_path = get_project_top_dir() / r"src/spel/base_model.cfg"
+    return open(base_conf_path, "r").read().strip()
 
 
 def get_project_top_dir():
