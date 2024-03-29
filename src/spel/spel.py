@@ -1,18 +1,17 @@
-from transformers import RobertaTokenizer
+from transformers import AutoTokenizer
 from typing import List
 import os
 
 from src.spel.configuration import device, get_local_model_path
-from src.spel.data_loader import BERT_MODEL_NAME
+from src.spel.data_loader import BERT_MODEL_NAME, dl_sa
 from src.spel.model import SpELAnnotator
 from src.spel.utils import get_subword_to_word_mapping
 from src.spel.span_annotation import WordAnnotation, PhraseAnnotation
-from src.utils import preprocess_instance, get_response
 
 class SpELModel:
     def __init__(self) -> None:
         self.__finetuned_after_steps = 4
-        self.tokenizer = RobertaTokenizer.from_pretrained(BERT_MODEL_NAME)
+        self.tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_NAME)
         self.spel = SpELAnnotator()
 
         self.spel.init_model_from_scratch(device=device)
@@ -26,6 +25,8 @@ class SpELModel:
                                   load_from_torch_hub=False, 
                                   finetuned_after_step=self.__finetuned_after_steps
                                 )
+    
+        dl_sa.set_vocab_and_itos_to_all()
     
     def __run_spel(self, sentence) -> List[PhraseAnnotation]:
         inputs = self.tokenizer(sentence, return_tensors="pt")
@@ -54,7 +55,7 @@ class SpELModel:
         annotations = []
         for sentence in sentences:
             phrase_annotation = self.__run_spel(sentence)
-            print([pa.resolved_annotation for pa in phrase_annotation])
+            print([dl_sa.mentions_itos[pa.resolved_annotation] for pa in phrase_annotation])
 
 
 if __name__ == "__main__":
