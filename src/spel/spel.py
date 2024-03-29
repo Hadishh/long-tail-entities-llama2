@@ -60,6 +60,6 @@ class SpELModel:
 
 if __name__ == "__main__":
     spel = SpELModel()
-    sentence = "Ronaldo in Brazil missed the corner."
-    spel.do_el([sentence])
+    sentences = ["Ronaldo scored 15 goals for Brazil in World Cup 1994."]
+    spel.do_el(sentences)
 
