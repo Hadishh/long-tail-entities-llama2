@@ -53,9 +53,25 @@ class SpELModel:
 
     def do_el(self, sentences):
         annotations = []
+        
         for sentence in sentences:
             phrase_annotation = self.__run_spel(sentence)
-            print([dl_sa.mentions_itos[pa.resolved_annotation] for pa in phrase_annotation])
+            data_ = []
+            for pa in phrase_annotation:
+                if pa.resolved_annotation <= 1:
+                    #either pad or none
+                    continue
+                
+                mention = dl_sa.mentions_itos[pa.resolved_annotation]
+                span = (pa.begin_character, pa.end_character)
+                phrase = pa.word_string
+
+                data_.append({"mention": mention, "span": span, "phrase": phrase})
+
+            annotations.append(data_)
+        
+        return annotations
+
 
 
 if __name__ == "__main__":
