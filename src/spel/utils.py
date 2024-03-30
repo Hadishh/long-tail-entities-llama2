@@ -10,7 +10,7 @@ import string
 from enum import Enum
 from tqdm import tqdm
 
-from src.spel.data_loader import get_dataset, tokenizer, dl_sa
+from src.spel.data_loader import tokenizer, dl_sa
 from src.spel.span_annotation import SubwordAnnotation, WordAnnotation, PhraseAnnotation
 from src.spel.aida import AIDADataset
 from src.spel.configuration import get_resources_dir
@@ -111,30 +111,6 @@ def get_subword_to_word_mapping(subword_tokens, original_string, sequence_starts
                     end_subword_index = start_subword_index
                     break
     return subword_to_word_mapping
-
-
-def store_validation_data_wiki(checkpoints_root, batch_size, label_size, is_training, use_retokenized_wikipedia_data):
-    dataset_name = f"validation_data_cache_b_{batch_size}_l_{label_size}_" \
-                   f"{('rt_wiki' if use_retokenized_wikipedia_data else 'wiki') if is_training else 'conll'}/"
-    if not os.path.exists(os.path.join(checkpoints_root, dataset_name)):
-        os.mkdir(os.path.join(checkpoints_root, dataset_name))
-    else:
-        print("Retrieving the validation data ...")
-        return dataset_name
-    print("Caching the validation data ...")
-    if is_training:
-        valid_iter = tqdm(get_dataset(
-            dataset_name='enwiki', split='valid', batch_size=batch_size, label_size=label_size,
-            use_retokenized_wikipedia_data=use_retokenized_wikipedia_data))
-    else:
-        valid_iter = tqdm(get_dataset(dataset_name='aida', split='valid', batch_size=batch_size, label_size=label_size))
-    for ind, (inputs, subword_mentions) in enumerate(valid_iter):
-        with open(os.path.join(checkpoints_root, dataset_name, f"{ind}"), "wb") as store_file:
-            pickle.dump((inputs.token_ids.cpu(), subword_mentions.ids.cpu(), subword_mentions.probs.cpu(),
-                         inputs.eval_mask.cpu(), subword_mentions.dictionary, inputs.raw_mentions,
-                         inputs.is_in_mention.cpu(), inputs.bioes.cpu()), store_file,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-    return dataset_name
 
 
 def postprocess_annotations(annotations, sentence):

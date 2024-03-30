@@ -40,9 +40,6 @@ from typing import Union, Tuple
 import torch
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
-from torchdata.datapipes.iter import FileOpener, IterableWrapper, HttpReader, FileLister
-from torchtext.data.datasets_utils import _wrap_split_argument, _create_dataset_directory
-from torchtext.utils import download_from_url
 
 from transformers import AutoTokenizer, BatchEncoding
 
@@ -96,30 +93,6 @@ class StaticAccess:
 dl_sa = StaticAccess()
 
 
-class ENWIKI20230827Config:
-    URL = "https://1sfu-my.sharepoint.com/:u:/g/personal/sshavara_sfu_ca/Ea3IVbOpkTJKpASNyL9aFGMBQpH0ABU2hQa-wYyakkZ9TQ?e=DJFF3v&download=1"
-    MD5 = "eb9a54a8f1f858cdcbf6c750942a896f"
-    PATH = "enwiki-2023-spel-roberta-tokenized-aug-27-2023.tar.gz"
-    DATASET_NAME = "WIKIPEDIA20230827"
-    NUM_LINES = {'train': 3055221, 'valid': 1000, 'test': 1000}
-
-
-class ENWIKI20230827V2Config:
-    URL = 'https://1sfu-my.sharepoint.com/:u:/g/personal/sshavara_sfu_ca/EeS_Tgl_CFJNiTh6YH5IDrsBocEZUsZV3lxPB6pleTxyxw?e=caH1cf&download=1'
-    MD5 = "83a37f528800a463cd1a376e80ffc744"
-    PATH = "enwiki-2023-spel-roberta-tokenized-aug-27-2023-retokenized.tar.gz"
-    DATASET_NAME = "WIKIPEDIA20230827V2"
-    NUM_LINES = {'train': 3038581, 'valid': 996}
-
-
-class AIDA20230827Config:
-    URL = "https://1sfu-my.sharepoint.com/:u:/g/personal/sshavara_sfu_ca/EajEGYyf8LBOoxqDaiPBvbgBwFuEC08nssvZwGJWsG_HXg?e=wAwV6H&download=1"
-    MD5 = "8078529d5df96d0d1ecf6a505fdb767a"
-    PATH = "aida-conll-spel-roberta-tokenized-aug-23-2023.tar.gz"
-    DATASET_NAME = "AIDA20230827"
-    NUM_LINES = {'train': 1585, 'valid': 391, 'test': 372}
-
-
 tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_NAME, cache_dir=get_checkpoints_dir() / "hf")
 
 WIKI_EXTRACTED_FILES = {"train": "train.json", "valid": "valid.json", "test": " test.json"}
@@ -151,34 +124,6 @@ def wiki_data_record_convert(line):
                                              for x in r['mention_entity_probs'][-1]]
     return r
 
-@_create_dataset_directory(dataset_name=ENWIKI20230827Config.DATASET_NAME)
-@_wrap_split_argument(("train", "valid", "test"))
-def ENWIKI20230827(root: str, split: Union[Tuple[str], str]):
-    root = root if root else ".data"
-    path = root + "/" + ENWIKI20230827Config.PATH
-    if not os.path.exists(path):
-        download_from_url(ENWIKI20230827Config.URL, root=root, path=path, hash_value=ENWIKI20230827Config.MD5,
-                          hash_type='md5')
-    online_reader_dp = FileLister(root, ENWIKI20230827Config.PATH)
-    tar_file_dp = FileOpener(online_reader_dp, mode="b").load_from_tar().filter(
-        partial(wiki_filter_fn, split)).readlines(return_path=False).map(wiki_data_record_convert)
-    return tar_file_dp
-
-@_create_dataset_directory(dataset_name=ENWIKI20230827V2Config.DATASET_NAME)
-@_wrap_split_argument(("train", "valid"))
-def ENWIKI20230827V2(root: str, split: Union[Tuple[str], str]):
-    root = root if root else ".data"
-    path = root + "/" + ENWIKI20230827V2Config.PATH
-    if not os.path.exists(path):
-        download_from_url(ENWIKI20230827V2Config.URL, root=root, path=path, hash_value=ENWIKI20230827V2Config.MD5,
-                          hash_type='md5')
-    online_reader_dp = FileLister(root, ENWIKI20230827V2Config.PATH)
-    tar_file_dp = FileOpener(online_reader_dp, mode="b").load_from_tar().filter(
-        partial(wiki_filter_fn, split)).readlines(return_path=False).map(wiki_data_record_convert)
-    return tar_file_dp
-
-def aida_path_fn(r, _=None):
-    return os.path.join(r, AIDA20230827Config.PATH)
 
 
 def aida_select_split(s, file_name_data):
@@ -191,16 +136,6 @@ def aida_data_record_convert(r):
         return {"tokens": [x[0] for x in r], "mentions": [[x[4] if x[4] else "|||O|||"] for x in r],
                 "mention_entity_probs": [[1.0] for _ in r], "mention_probs": [[1.0] for _ in r],
                 "candidates": [x[7] if x[7] else [] for x in r] if len(x) == 8 else [[] for x in r]}
-
-
-@_create_dataset_directory(dataset_name=AIDA20230827Config.DATASET_NAME)
-@_wrap_split_argument(('train', 'valid', 'test'))
-def AIDA20230827(root, split):
-    online_reader_dp = HttpReader(IterableWrapper([AIDA20230827Config.URL])).on_disk_cache(
-        filepath_fn=partial(aida_path_fn, root), hash_dict={aida_path_fn(root): AIDA20230827Config.MD5},
-        hash_type="md5").end_caching(mode="wb", same_filepath_fn=True)
-    return FileOpener(online_reader_dp, mode="b").load_from_tar().parse_json_files().flatmap(
-        partial(aida_select_split, split)).map(aida_data_record_convert)
 
 
 class DistributableDataset(Dataset):
@@ -238,88 +173,6 @@ def convert_is_in_mention_to_bioes(is_in_mention):
         bioes.append(
             2 if not current else (4 if not before and not after else (0 if not before else (3 if not after else 1))))
     return bioes
-
-
-def get_dataset(dataset_name: str, split: str, batch_size: int, get_labels_with_high_model_score=None,
-                label_size: int = 0, load_distributed: bool = False, world_size: int = 1, rank: int = 0,
-                use_retokenized_wikipedia_data: bool = False):
-    """
-    :param dataset_name: The dataset name can either be "enwiki" or "aida"
-    :param split: the requested dataset split which can be 'train', 'valid' or 'test'
-    :param batch_size: the size of the resulting batch from the data loader
-    :param get_labels_with_high_model_score: The function that finds high scoring negative samples for the model
-    :param label_size: The maximum output distribution size. You can pass the output vocabulary size for this parameter.
-    :param load_distributed: The flag hinting whether the data loader will be loaded in a multi-gpu setting.
-    :param world_size: the number of machines that the dataloader is expected to serve.
-    :param rank: the rank of the gpu on which the data is expected to be served.
-    :param use_retokenized_wikipedia_data: a flag indicating whether to use ENWIKI20230827 dataset or ENWIKI20230827V2
-    """
-
-    assert dataset_name in ["enwiki", "aida"]
-    if not load_distributed or rank == 0:
-        print(f"Initializing the {dataset_name.upper()}/{split} dataset ...")
-
-    def collate_batch(batch):
-        data = {}
-        for key in ["tokens", "mentions", "mention_entity_probs", "eval_mask", "candidates", "is_in_mention", "bioes"]:
-            data[key] = []
-        for annotated_line_in_file in batch:
-            data["tokens"].append(tokenizer.convert_tokens_to_ids(annotated_line_in_file["tokens"]))
-            data["mentions"].append([
-                [(dl_sa.mentions_vocab[x] if x not in dl_sa.aida_canonical_redirects else
-                  dl_sa.mentions_vocab[dl_sa.aida_canonical_redirects[x]])
-                 if x is not None and x not in ['Gmina_Żabno'] else dl_sa.mentions_vocab["|||O|||"] for x in el]
-                for el in annotated_line_in_file["mentions"]
-            ])
-            data["mention_entity_probs"].append(annotated_line_in_file["mention_entity_probs"])
-            data["eval_mask"].append(list(map(
-                lambda item: 1 if len(item) == 1 else 0, annotated_line_in_file["mention_probs"])))
-            is_in_mention = [1 if x != '|||O|||' else 0 for el, elp in zip(
-                annotated_line_in_file["mentions"], annotated_line_in_file["mention_entity_probs"])
-                             for x, y in zip(el, elp) if y == max(elp)]
-            data["is_in_mention"].append(is_in_mention)
-            data["bioes"].append(convert_is_in_mention_to_bioes(is_in_mention))
-
-        maxlen = max([len(x) for x in data["tokens"]])
-        token_ids = torch.LongTensor([sample + [0] * (maxlen - len(sample)) for sample in data["tokens"]])
-        eval_mask = torch.LongTensor([sample + [0] * (maxlen - len(sample)) for sample in data["eval_mask"]])
-        is_in_mention = torch.LongTensor([sample + [0] * (maxlen - len(sample)) for sample in data["is_in_mention"]])
-        bioes = torch.LongTensor([sample + [2] * (maxlen - len(sample)) for sample in data["bioes"]])
-        if get_labels_with_high_model_score:
-            labels_with_high_model_score = get_labels_with_high_model_score(token_ids)
-        else:
-            labels_with_high_model_score = None
-        subword_mentions = create_output_with_negative_examples(
-            data["mentions"], data["mention_entity_probs"], token_ids.size(0), token_ids.size(1),
-            len(dl_sa.mentions_vocab), label_size, labels_with_high_model_score)
-        inputs = BatchEncoding({
-            'token_ids': token_ids,
-            'eval_mask': eval_mask,
-            'raw_mentions': data["mentions"],
-            'is_in_mention': is_in_mention,
-            "bioes": bioes
-        })
-        return inputs, subword_mentions
-    if not load_distributed or rank == 0:
-        print(f"Done initializing the {dataset_name.upper()}/{split} dataset ...")
-    wikipedia_dataset = ENWIKI20230827
-    wikipedia_dataset_config = ENWIKI20230827Config
-    retokenized_wikipedia_dataset = ENWIKI20230827V2
-    retokenized_wikipedia_dataset_config = ENWIKI20230827V2Config
-    aida_dataset = AIDA20230827
-    aida_dataset_config = AIDA20230827Config
-    dset_class = (retokenized_wikipedia_dataset if use_retokenized_wikipedia_data else wikipedia_dataset) \
-        if dataset_name == "enwiki" else aida_dataset
-    d_size = (retokenized_wikipedia_dataset_config.NUM_LINES[split] if use_retokenized_wikipedia_data else
-              wikipedia_dataset_config.NUM_LINES[split]) \
-        if dataset_name == "enwiki" else aida_dataset_config.NUM_LINES[split]
-    dataset_ = DistributableDataset(dset_class(split=split, root=get_checkpoints_dir()), d_size, world_size, rank) \
-        if load_distributed else dset_class(split=split, root=get_checkpoints_dir())
-    return DataLoader(dataset_, batch_size=batch_size, collate_fn=collate_batch,
-                      sampler=DistributedSampler(dataset_, num_replicas=world_size, rank=rank)) \
-        if load_distributed and split == "train" else DataLoader(dset_class(split=split, root=get_checkpoints_dir()),
-                                                                 batch_size=batch_size,
-                                                                 collate_fn=collate_batch)
 
 
 def create_output_with_negative_examples(batch_entity_ids, batch_entity_probs, batch_size, maxlen, label_vocab_size,
@@ -375,16 +228,3 @@ def create_output_with_negative_examples(batch_entity_ids, batch_entity_probs, b
         "probs": label_probs,  # of size input_batch_size x input_max_len x label_size
         "dictionary": {v: k for k, v in all_batch_entity_ids.items()}  # contains all original ids for mentions in batch
     })
-
-
-def _make_vocab_file():
-    wiki_vocab = set()
-    vocab_file = open("enwiki_20230827.txt", "w")
-    for spl in ['train', 'valid', 'test']:
-        for el in tqdm(ENWIKI20230827(split=spl, root=get_checkpoints_dir())):
-            for x in el['mentions']:
-                for y in x:
-                    if y not in wiki_vocab:
-                        vocab_file.write(f"{y}\n")
-                    wiki_vocab.add(y)
-    vocab_file.close()
