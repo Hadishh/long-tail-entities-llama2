@@ -11,6 +11,7 @@ from src.spel.span_annotation import WordAnnotation, PhraseAnnotation
 class SpELModel:
     def __init__(self) -> None:
         self.__finetuned_after_steps = 4
+        self.max_input_tokens = 512
         self.tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_NAME)
         self.spel = SpELAnnotator()
 
