@@ -42,7 +42,7 @@ def main(args):
             indices[instance["id"]] = (len(sentences), len(sentences) + len(sent_tokenized))
             sentences.extend(sent_tokenized)
 
-        mentions = entity_linker.do_ner(sentences)
+        mentions = entity_linker.do_el(sentences)
 
         for key, value in indices.items():
             file_path = os.path.join(args.output_dir, key)
