@@ -88,7 +88,7 @@ def get_subword_to_word_mapping(subword_tokens, original_string, sequence_starts
     original_tokens = get_punc_tokenized_words_list(original_string.split())
 
     original_pointer = 0
-    while len(subword_to_word_mapping) != len(original_tokens):
+    while len(subword_to_word_mapping) != len(original_tokens) and end_subword_index < len(original_string) + 1:
         next_t = tokenizer.convert_tokens_to_string(subword_tokens[start_subword_index:end_subword_index])
         next_t = next_t.strip()
         if next_t == original_tokens[original_pointer]:
